@@ -82,7 +82,7 @@ class SpiderManager:
         self.url_manager = url_manager
         self.data_storer = data_storer
 
-    def get_manager(self, task_queue, result_queue, conn_queue, store_queue):
+    def get_manager(self, task_queue, result_queue):
 
         def _return_task_queue():
             return task_queue
@@ -90,16 +90,8 @@ class SpiderManager:
         def _return_result_queue():
             return result_queue
 
-        def _return_conn_queue():
-            return conn_queue
-
-        def _return_store_queue():
-            return store_queue
-
         BaseManager.register('get_task_queue', callable=_return_task_queue)
         BaseManager.register('get_result_queue', callable=_return_result_queue)
-        BaseManager.register('get_conn_queue', callable=_return_conn_queue)
-        BaseManager.register('get_store_queue', callable=_return_store_queue)
         manager = BaseManager(address=('127.0.0.1', 5001), authkey=b'abc')
         return manager
 
@@ -119,24 +111,25 @@ class SpiderManager:
                 self.url_manager.add_new_urls(urls)
 
     def result_processing(self, conn_queue, result_queue, store_queue):
-        while not result_queue.empty():
-            content = result_queue.get()
-            if content['new_urls'] == 'end':
-                conn_queue.put('end')
-                return
-            new_urls = content['new_urls']
-            conn_queue.put(new_urls)
-            data = content['data']
-            store_queue.put(data)
+        while True:
+            while not result_queue.empty():
+                content = result_queue.get()
+                if content['new_urls'] == 'end':
+                    conn_queue.put('end')
+                    return
+                new_urls = content['new_urls']
+                conn_queue.put(new_urls)
+                data = content['data']
+                store_queue.put(data)
 
     def store_processing(self, store_queue):
-        self.data_storer = DataStorer()
-        while not store_queue.empty():
-            data = store_queue.get()
-            if data == 'end':
-                del self.data_storer
-                return
-            data_storer.store_data(data)
+        while True:
+            while not store_queue.empty():
+                data = store_queue.get()
+                if data == 'end':
+                    del self.data_storer
+                    return
+                data_storer.data_store(data)
 
 class DataStorer():
 

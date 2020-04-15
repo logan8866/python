@@ -40,9 +40,9 @@ class HTMLDownloader():
                 "User-Agent":"Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20100101 Firefox/6.0"
         }
         
-    def downloader(self,url):
+    def download(self,url):
         response = requests.get(url,headers=self.agent)
-        if requests.status_code == 200:
+        if response.status_code == 200:
             return response.content.decode("utf8")
         else:
             return None
@@ -55,7 +55,7 @@ class Parse():
 
     def parse(self,content):
         self.soup = BeautifulSoup(content,"lxml")
-        slef.soup.prettify()
+        self.soup.prettify()
         next_urls = self._find_next_urls()
         data = self._find_data()
         return next_urls,data
@@ -63,16 +63,16 @@ class Parse():
     def _find_next_urls(self):
         urls = self.soup.select("a[class='previous-comment-page']")
         next_urls = list()
-        for url in urls:
-            next_urls.append(self.url_header+url.get("href"))
+        next_urls.append(self.url_header+urls[0].get("href"))
         return next_urls
 
     def _find_data(self):
-        imgs = self.soup.select("img[style='max-width: 480px; max-height: 750px;']")
+        imgs = self.soup.select("img[referrerpolicy='no-referrer']")
         data = list()
         for img in imgs:
             url = self.url_header+img.get("src")
             data.append(url)
+        return data
 
 
 
