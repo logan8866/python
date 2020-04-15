@@ -48,6 +48,32 @@ class HTMLDownloader():
             return None
 
 
+class Parse():
+
+    def __init__(self):
+        self.url_header = "http:"
+
+    def parse(self,content):
+        self.soup = BeautifulSoup(content,"lxml")
+        slef.soup.prettify()
+        next_urls = self._find_next_urls()
+        data = self._find_data()
+        return next_urls,data
+
+    def _find_next_urls(self):
+        urls = self.soup.select("a[class='previous-comment-page']")
+        next_urls = list()
+        for url in urls:
+            next_urls.append(self.url_header+url.get("href"))
+        return next_urls
+
+    def _find_data(self):
+        imgs = self.soup.select("img[style='max-width: 480px; max-height: 750px;']")
+        data = list()
+        for img in imgs:
+            url = self.url_header+img.get("src")
+            data.append(url)
+
 
 
 
