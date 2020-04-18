@@ -7,7 +7,7 @@ class NodeSpider():
     def __init__(self):
         BaseManager.register("get_task_queue")
         BaseManager.register("get_result_queue")
-        self.address = ("127.0.0.1",5002)
+        self.address = ("127.0.0.1",5001)
         self.manager = BaseManager(address=self.address,authkey=b"abc")
         try:
             self.manager.connect()
@@ -16,11 +16,11 @@ class NodeSpider():
         self.task_queue = self.manager.get_task_queue()
         self.result_queue = self.manager.get_result_queue()
         self.downloader = HTMLDownloader()
-        self.parse = HTMLParse()
+        self.parse = Parse()
 
     def crawl(self):
         while True:
-            if self.task_queue.empty():
+            if not self.task_queue.empty():
                 url = self.task_queue.get()
                 if url == "end":
                     self.result_queue.put({"new_urls":url,"data":url})
