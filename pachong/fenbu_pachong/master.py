@@ -82,7 +82,7 @@ class SpiderManager:
         self.url_manager = url_manager
         self.data_storer = data_storer
 
-    def get_manager(self, task_queue, result_queue):
+    def get_manager(self, task_queue, result_queue, conn_queue, store_queue):
 
         def _return_task_queue():
             return task_queue
@@ -90,15 +90,23 @@ class SpiderManager:
         def _return_result_queue():
             return result_queue
 
+        def _return_conn_queue():
+            return conn_queue
+
+        def _return_store_queue():
+            return store_queue
+
         BaseManager.register('get_task_queue', callable=_return_task_queue)
         BaseManager.register('get_result_queue', callable=_return_result_queue)
+        BaseManager.register('get_conn_queue', callable=_return_conn_queue)
+        BaseManager.register('get_store_queue', callable=_return_store_queue)
         manager = BaseManager(address=('127.0.0.1', 5001), authkey=b'abc')
         return manager
 
     def url_manager_processing(self, task_queue, conn_queue, start_url):
         self.url_manager.add_new_url(start_url)
         while 1:
-            while self.url_manager.has_new_url():
+            if self.url_manager.has_new_url():
                 new_url = self.url_manager.pop_new_url()
                 if new_url == 'end':
                     task_queue.put('end')
@@ -112,7 +120,7 @@ class SpiderManager:
 
     def result_processing(self, conn_queue, result_queue, store_queue):
         while True:
-            while not result_queue.empty():
+            if not result_queue.empty():
                 content = result_queue.get()
                 if content['new_urls'] == 'end':
                     conn_queue.put('end')
@@ -124,12 +132,12 @@ class SpiderManager:
 
     def store_processing(self, store_queue):
         while True:
-            while not store_queue.empty():
+            if not store_queue.empty():
                 data = store_queue.get()
                 if data == 'end':
                     del self.data_storer
                     return
-                data_storer.data_store(data)
+                self.data_storer.store_file(data)
 
 class DataStorer():
 
@@ -137,6 +145,7 @@ class DataStorer():
         self.datas = list()
         self.store_path = "./store.html"
         self.start_store()
+        self.count = 0
 
     def __del__(self):
         self.end_store()
@@ -150,14 +159,23 @@ class DataStorer():
     def data_store(self,data):
         self.datas.append(data)
         if len(self.datas) == 10:
-            f = write(self.store_path,"w")
+            f = open(self.store_path,"a")
             for data in self.datas:
-                f.write(data)
+                f.write(str(data))
+            self.datas = []
+            f.close()
         else:
             return
+    
+    def store_file(self,data):
+        for text in data:
+            f = open("./img/"+str(self.count)+".jpg","wb")
+            f.write(text)
+            f.close()
+            self.count+=1
 
     def end_store(self):
-        f = open(self.store_path,"w")
+        f = open(self.store_path,"a")
         f.write("</body>")
         f.write("</html>")
         f.close()

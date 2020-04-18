@@ -26,8 +26,12 @@ class NodeSpider():
                     self.result_queue.put({"new_urls":url,"data":url})
                     return 
                 content = self.downloader.download(url)
-                urls,data = self.parse.parse(content)
-                self.result_queue.put({"new_urls":urls,"data":data})
+                urls,datas = self.parse.parse(content)
+                data_file = list()
+                for data in datas:
+                    text = self.downloader.download_file(data)
+                    data_file.append(text)
+                self.result_queue.put({"new_urls":urls,"data":data_file})
 
         return
 
@@ -46,7 +50,12 @@ class HTMLDownloader():
             return response.content.decode("utf8")
         else:
             return None
-
+    def download_file(self,url):
+        response = requests.get(url,headers=self.agent)
+        if response.status_code == 200:
+            return response.content
+        else:
+            return None
 
 class Parse():
 
